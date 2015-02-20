@@ -1,0 +1,290 @@
+//-------------Cal24.java---------------
+//计算24点程序
+//作者：徒步天下(hiker2008.blog.51cto.com)
+//
+//运行格式： java Cal24 abcd
+//abcd为四个1-9数字
+//
+//输出为结果等于24的算式，及个数
+
+import java.util.*;
+public class Cal24 {
+ String[] op;
+ Set num = new HashSet();
+
+ public static void main(String[] args) {
+  Cal24 cal24;
+  if (args.length<1) {
+   System.out.println("Usage Cal24 abcd");
+   return;
+  }
+  cal24 = new Cal24(args[0]);
+  cal24.pEx();
+ }
+
+ //初始化数字组合和符号组合
+ Cal24(String inputnum) {
+
+  //生成所输入abcd四个数字的全排列（不可重复使用，如aaaa），去掉重复的，保存在 num 字符串集合
+  for (int i=0;i<4;i++) {
+   for (int j=0;j<4;j++) {
+    for (int k=0;k<4;k++) {
+     if (i==j || i==k || k==j)   //去掉重复使用同一数字的情况
+      continue;
+     int z=6-i-j-k;     //计算出剩下的第四个数。 i+j+k+z=6
+     num.add(new String(inputnum.substring(i,i+1)+inputnum.substring(j,j+1)
+       +inputnum.substring(k,k+1)+inputnum.substring(z,z+1)));
+    }
+   }
+  }
+  // 生成＋－×／符号的全排列（可重复使用,如+++），保存在 op 字符串数组
+  op = new String[64];
+  String t="+-*/";
+  for (int i=0;i<4;i++) {
+   for (int j=0;j<4;j++) {
+    for (int k=0;k<4;k++) {
+     int z=i*16+j*4+k;
+     op[z]=new String(t.substring(i,i+1)+t.substring(j,j+1)+t.substring(k,k+1));
+    }
+   }
+  }
+ }
+
+ // 查找等于24的算式
+ void pEx() {
+  Iterator i=num.iterator();
+
+  while (i.hasNext()) {
+   // 遍历每一个数字组合和每一个符号组合
+   String testNum=(String)i.next();
+   for (int j=0;j<64;j++)
+    new CalAopBopCopD(testNum,op[j]); //计算五种不同顺序的值
+  }
+
+  //输出等于24的不同算式总数。
+  System.out.println("Total found : "+CalAopBopCopD.getTotal());
+ }
+
+ //打印数字组合和符号组合，测试使用
+ void printOp() {
+  Iterator i=num.iterator();
+  while (i.hasNext()) {
+   System.out.print(i.next());
+  }
+  for (int j=0;j<64;j++) {
+   System.out.println("op["+j+"]="+op[j]);
+  }
+ }
+}
+//生成 a op1 b op2 c op3 d的不同计算顺序的算式，打印计算结果等于24的算式并计数
+class CalAopBopCopD {
+ static int total=0;  //结果等于24的算式计数
+ double a,b,c,d;   //四个操作数
+ char op1,op2,op3;  //三个运算符号
+ double z1,z2,z3;  //运算中间结果
+ CalAopB t;    //计算 a op b 的对象
+
+ //返回结果等于24的算式总数
+ static int getTotal() {
+  return total;
+ }
+
+ //根据数字组合和符号组合，转换成对象中类型，依次生成并计算不同顺序的算式
+ CalAopBopCopD(String n,String o) {
+  a = Double.parseDouble(n.substring(0,1));
+  b = Double.parseDouble(n.substring(1,2));
+  c = Double.parseDouble(n.substring(2,3));
+  d = Double.parseDouble(n.substring(3,4));
+  op1 = o.charAt(0);
+  op2 = o.charAt(1);
+  op3 = o.charAt(2);
+
+  //依次生成并计算不同顺序的算式
+  printEx1();
+  printEx2();
+  printEx3();
+  printEx4();
+  printEx5();
+ }
+
+
+ void printEx1() {
+  //算式顺序： (a op1 b) op2 (c op3 d)
+  t=new CalAopB(a,op1,b);
+  if (t.getErr())
+   return;
+  else
+   z1=t.getResult();
+  t=new CalAopB(c,op3,d);
+  if (t.getErr())
+   return;
+  else
+   z2=t.getResult();
+  t=new CalAopB(z1,op2,z2);
+  if (t.getErr())
+   return;
+  else
+   z3=t.getResult();
+  if (Math.abs(z3-24.0) <0.0001) {
+   System.out.println("No. "+(++total)+" : ( "+(int)a+" "+op1+" "+(int)b
+     +" ) "+op2+" ( "+(int)c+" "+op3+" "+(int)d
+     +" ) = 24");
+  }
+ }
+
+ void printEx2() {
+  //算式顺序： ((a op1 b) op2 c) op3 d
+  t=new CalAopB(a,op1,b);
+  if (t.getErr())
+   return;
+  else
+   z1=t.getResult();
+  t=new CalAopB(z1,op2,c);
+  if (t.getErr())
+   return;
+  else
+   z2=t.getResult();
+  t=new CalAopB(z2,op3,d);
+  if (t.getErr())
+   return;
+  else
+   z3=t.getResult();
+  if (Math.abs(z3-24.0) <0.0001) {
+   System.out.println("No. "+(++total)+" : ( ( "+(int)a+" "+op1+" "+(int)b
+     +" ) "+op2+" "+(int)c+" ) "+" "+op3+" "+(int)d
+     +" = 24");
+  }
+ }
+
+ void printEx3() {
+  //算式顺序： ( a op1 ( b op2 c)) op3 d
+  t=new CalAopB(b,op2,c);
+  if (t.getErr())
+   return;
+  else
+   z1=t.getResult();
+  t=new CalAopB(a,op1,z1);
+  if (t.getErr())
+   return;
+  else
+   z2=t.getResult();
+  t=new CalAopB(z2,op3,d);
+  if (t.getErr())
+   return;
+  else
+   z3=t.getResult();
+  if (Math.abs(z3-24.0) <0.0001) {
+   System.out.println("No. "+(++total)+" : ( "+(int)a+" "+op1+" ( "+(int)b
+     +" "+op2+" "+(int)c+" ) ) "+op3+" "+(int)d
+     +" = 24");
+  }
+ }
+
+ void printEx4() {
+  //算式顺序： a op1 (( b op2 c) op3 d )
+  t=new CalAopB(b,op2,c);
+  if (t.getErr())
+   return;
+  else
+   z1=t.getResult();
+  t=new CalAopB(z1,op3,d);
+  if (t.getErr())
+   return;
+  else
+   z2=t.getResult();
+  t=new CalAopB(a,op1,z2);
+  if (t.getErr())
+   return;
+  else
+   z3=t.getResult();
+  if (Math.abs(z3-24.0) <0.0001) {
+   System.out.println("No. "+(++total)+" : "+(int)a+" "+op1+" ( ( "+(int)b
+     +" "+op2+" "+(int)c+" ) "+op3+" "+(int)d
+     +" ) = 24");
+  }
+ }
+
+ void printEx5() {
+  //算式顺序： a op1 ( b op2 ( c op3 d ))
+  t=new CalAopB(c,op3,d);
+  if (t.getErr())
+   return;
+  else
+   z1=t.getResult();
+  t=new CalAopB(b,op2,z1);
+  if (t.getErr())
+   return;
+  else
+   z2=t.getResult();
+  t=new CalAopB(a,op1,z2);
+  if (t.getErr())
+   return;
+  else
+   z3=t.getResult();
+  if (Math.abs(z3-24.0) <0.0001) {
+   System.out.println("No. "+(++total)+" : "+(int)a+" "+op1+" ( "+(int)b
+     +" "+op2+" ( "+(int)c+" "+op3+" "+(int)d
+     +" ) ) = 24");
+  }
+ }
+
+}
+//计算 a op b 的值
+//a,b是两个double类型，op为'+','-','*','/'四个符号中的一个。
+class CalAopB {
+ double a,b;  //两个操作数
+ char op;  //运算符号
+ int err=0;  //运算出错，则<0；正确，则为0
+ double result; //运算结果
+
+ // 初始化对象
+ CalAopB(double sa, char sop, double sb) {
+  a= sa;
+  b = sb;
+  op = sop;
+  String opstring="+-*/";
+  if (opstring.indexOf(op)<0) {
+   err= -1;
+  } else {
+   calResult();
+  }
+ }
+ //计算结果
+ void calResult() {
+  switch(op) {
+  case '/':
+    if (Math.abs(b)<0.00001) {
+     err = -2;
+     break;
+    }
+    result = a/b;
+    break;
+  case '+':
+    result = a+b;
+    break;
+  case '-':
+    result = a-b;
+    break;
+  case '*':
+    result = a*b;
+    break;
+  default:
+    err=-3;
+    break;
+  }
+ }
+
+ //返回是否出错，出错为true,不出错为false
+ boolean getErr() {
+  if (err==0)
+   return false;
+  else
+   return true;
+ }
+
+ //返回计算结果
+ double getResult() {
+  return result;
+ }
+}
+//-------------end---------------
